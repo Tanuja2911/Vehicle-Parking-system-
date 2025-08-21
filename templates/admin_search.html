@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Search Parking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; color: #333; }
+        
+        .header { background-color: #e0e0e0; color: #333; }
+
+        .header a { color: #333; text-decoration: none; margin-left: 15px; }
+
+        .header a:hover { text-decoration: underline; }
+
+        .lot-box {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .spot {
+            display: inline-block;
+            width: 34px;
+            height: 34px;
+            line-height: 34px;
+            margin: 3px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 4px;
+            color: white;
+        }
+        .spot-A { background-color: #adb5bd; }
+        .spot-O { background-color: #6c757d; }
+        .btn-grey { background-color: #adb5bd; border: none; }
+        .btn-grey:hover { background-color: #9ca3af; }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="header p-3 rounded d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <strong>Admin Panel</strong>
+            <a href="/admin/dashboard">Home</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/search">Search</a>
+            <a href="/admin/summary">Summary</a>
+            <a href="/logout">Logout</a>
+        </div>
+        <a href="#" class="text-decoration-none text-primary">Edit Profile</a>
+    </div>
+
+    <h4 class="mb-3">Search Parking Lots / Users / Spots</h4>
+
+    <!-- Search Form -->
+    <form method="POST" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <select name="search_type" class="form-select" required>
+                <option value="">Select Search Type</option>
+                <option value="location">Parking Lot by Location</option>
+                <option value="lot_id">Parking Lot by ID</option>
+                <option value="pincode">Parking Lot by Pincode</option>
+                <option value="user_id">User ID</option>
+                <option value="spot_id">Parking Spot by ID</option>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="text" name="search_value" class="form-control" placeholder="Enter search value" required>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </form>
+
+    <!-- Results for Parking Lots -->
+    <div class="row">
+        {% if found_lots %}
+            {% for lot in found_lots %}
+            <div class="col-md-6">
+                <div class="lot-box shadow-sm">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>Lot {{ lot.pl_id }} - {{ lot.pl_location }}</strong>
+                        <div>
+                            <a href="/admin/edit-lot/{{ lot.pl_id }}" class="text-primary me-2">Edit</a>
+                            <form action="/admin/delete-lot/{{ lot.pl_id }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this lot?');">
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="text-muted">
+                        Occupied: {{ lot.pl_maxspots - lot.pl_spots_linked | selectattr('ps_status', 'equalto', 'A') | list | length }}
+                        / {{ lot.pl_maxspots }}
+                    </p>
+                    <div>
+                        {% for spot in lot.pl_spots_linked %}
+                            <a href="/admin/view-spot/{{ spot.ps_id }}" title="Spot {{ spot.ps_id }}">
+                                <div class="spot spot-{{ spot.ps_status }}">{{ spot.ps_status }}</div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Results for User -->
+    {% if found_user %}
+        <div class="lot-box shadow-sm">
+            <h5>User Details</h5>
+            <p><strong>ID:</strong> {{ found_user.u_id }}</p>
+            <p><strong>Name:</strong> {{ found_user.u_name }}</p>
+            <p><strong>Email:</strong> {{ found_user.u_email }}</p>
+            <p><strong>Phone:</strong> {{ found_user.u_phone }}</p>
+            <p><strong>Address:</strong> {{ found_user.u_address }}</p>
+            <p><strong>Role:</strong> {{ found_user.u_role }}</p>
+            {% if active_reservation %}
+                <p class="text-success">Active Reservation: Spot ID {{ active_reservation.rs_spot_id }}</p>
+            {% else %}
+                <p class="text-warning">No active reservation.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Results for Parking Spot -->
+    {% if found_spot %}
+        <div class="lot-box shadow-sm">
+            <h5>Parking Spot Details</h5>
+            <p><strong>Spot ID:</strong> {{ found_spot.ps_id }}</p>
+            <p><strong>Parking Lot ID:</strong> {{ found_spot.ps_lot_id }}</p>
+            <p>
+                <strong>Status:</strong>
+                {% if found_spot.ps_status == 'A' %}
+                    <span class="text-success fw-bold">Available</span>
+                {% else %}
+                    <span class="text-danger fw-bold">Occupied</span>
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
